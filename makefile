@@ -1,11 +1,10 @@
-mymalloc: mymalloc.o
-	gcc mymalloc.o -o mymalloc -pedantic
+myfs: myfs.o
+	gcc myfs.o -o myfs -Wall
 
-mymalloc.o: mymalloc.c
-	gcc -c mymalloc.c -Wall -pedantic
-
+myfs.o: myfs.c
+	gcc -c myfs.c -Wall
 clean_csv:
 	rm *.csv
 
 clean:
-	rm *.o mymalloc a.out
+	rm *.o myfs a.out

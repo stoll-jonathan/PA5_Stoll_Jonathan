@@ -80,7 +80,7 @@ int roundup(int x, int y) {
 }
 
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
     
   inode_t* cur_dir_inode = NULL;
 
@@ -119,12 +119,11 @@ int main(int argc, char *argv[]){
 myfs_t* my_mkfs(int size, int maxfiles) {
   int num_data_blocks = roundup(size, BLKSIZE);
 
-  int num_inode_table_blocks = roundup(maxfiles*sizeof(inode_t), BLKSIZE);  // Note: not quite, inode should
-                                                                            // not be split between blocks
+  int num_inode_table_blocks = roundup(maxfiles*sizeof(inode_t), BLKSIZE);  // Note: not quite, inode should not be split between blocks
 
   size_t fs_size = sizeof(myfs_t) +  // superblock_t + groupdescriptor_t + block bitmap + inode bitmap 
-                   num_inode_table_blocks * sizeof(block_t) +  // inode_table
-                   num_data_blocks * sizeof(block_t);  // data_blocks
+  num_inode_table_blocks * sizeof(block_t) +  // inode_table
+  num_data_blocks * sizeof(block_t);  // data_blocks
 
   void *ptr;
   //int retval;
@@ -160,10 +159,10 @@ myfs_t* my_mkfs(int size, int maxfiles) {
   // read-in (not required, we are creating filesystem for first time, also zeroed because using calloc)
   union groupdescriptor_t* groupdescriptor = (union groupdescriptor_t*)groupdescriptor_ptr;
   groupdescriptor->groupdescriptor_info.inode_table = (inode_t*)((char*)ptr + 
-                                                                 sizeof(myfs_t));
+  sizeof(myfs_t));
   groupdescriptor->groupdescriptor_info.block_data = (block_t*)((char*)ptr + 
-                                                                sizeof(myfs_t) +
-                                                                num_inode_table_blocks * sizeof(block_t));
+  sizeof(myfs_t) +
+  num_inode_table_blocks * sizeof(block_t));
   // write out to fs
   memcpy((void*)&myfs->groupdescriptor, groupdescriptor_ptr, BLKSIZE);
 
