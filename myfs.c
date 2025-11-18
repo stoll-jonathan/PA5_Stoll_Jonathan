@@ -315,7 +315,78 @@ void my_crawlfs(myfs_t* myfs) {
 
 // IMPLEMENT THIS FUNCTION
 void my_creatdir(myfs_t* myfs, int cur_dir_inode_number, const char* new_dirname) {
+
+  // Set first available imap location to used
+  block_t* imap_cpy = malloc(BLKSIZE);
+  memcpy(imap_cpy, &myfs->imap, BLKSIZE);
+
+  int new_inode_number;
+  for (int bit = 0; bit < BLKSIZE*8; bit++) {
+    // skip first three inodes (reserved)
+    if (bit == invalid_inode_number || bit == badsectors_inode_number || bit == root_inode_number)
+      continue;
+
+    unsigned char byte = imap_cpy->data[bit / 8];
+    int mask = 1 << (bit % 8);
+    
+    // find the first unused (0) bit, and set it as used (1)
+    if ((byte & mask) == 0) {
+      imap_cpy->data[bit / 8] |= mask;
+      new_inode_number = bit;
+      break;
+    }
+  }
+
+  memcpy(&myfs->imap, imap_cpy, BLKSIZE);
+  free(imap_cpy);
+
+
+  // Set first available block location to used
+  block_t* bmap_cpy = malloc(BLKSIZE);
+  memcpy(bmap_cpy, &myfs->bmap, BLKSIZE);
+
+  int new_block_number;
+  for (int bit = 0; bit < BLKSIZE*8; bit++) {
+    unsigned char byte = bmap_cpy->data[bit / 8];
+    int mask = 1 << (bit % 8);
+    
+    // find the first unused (0) bit, and set it as used (1)
+    if ((byte & mask) == 0) {
+      bmap_cpy->data[bit / 8] |= mask;
+      new_block_number = bit;
+      break;
+    }
+  }
+
+  memcpy(&myfs->bmap, bmap_cpy, BLKSIZE);
+  free(bmap_cpy);
+
+
+  // Modify parent directory size, create and initialize new child directory, update  inode table
+  block_t* inodeTable_cpy = malloc(BLKSIZE);
+  memcpy(inodeTable_cpy, myfs->groupdescriptor.groupdescriptor_info.inode_table, BLKSIZE);
   
+  inode_t* inodeTable_buf = (inode_t*) inodeTable_cpy;
+  inode_t* parentInode = &inodeTable_buf[cur_dir_inode_number];
+  inode_t* new_inode = &inodeTable_buf[new_inode_number];
+  parentInode->size += sizeof(dirent_t);
+  new_inode->size = 2 * sizeof(dirent_t);
+  new_inode->blocks = 1;
+  gettimeofday(&new_inode->ctime, NULL);
+
+  for (uint i=1; i<15; ++i)  // initialize all data blocks to NULL (1 data block only needed at initialization)
+    new_inode->data[i] = NULL;
+
+  block_t* block_data = myfs->groupdescriptor.groupdescriptor_info.block_data;
+  new_inode->data[0] = &block_data[new_block_number];
+
+  memcpy(myfs->groupdescriptor.groupdescriptor_info.inode_table, inodeTable_cpy, BLKSIZE);
+  free(inodeTable_cpy);
+
+
+  // 4
+
+  // 5
 }
 
 
