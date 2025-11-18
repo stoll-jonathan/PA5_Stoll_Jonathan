@@ -372,9 +372,8 @@ void my_creatdir(myfs_t* myfs, int cur_dir_inode_number, const char* new_dirname
   parentInode->size += sizeof(dirent_t);
   new_inode->size = 2 * sizeof(dirent_t);
   new_inode->blocks = 1;
-  gettimeofday(&new_inode->ctime, NULL);
 
-  for (uint i=1; i<15; ++i)  // initialize all data blocks to NULL (1 data block only needed at initialization)
+  for (uint i = 0; i < 15; ++i)  // initialize all data blocks to NULL (1 data block only needed at initialization)
     new_inode->data[i] = NULL;
 
   block_t* block_data = myfs->groupdescriptor.groupdescriptor_info.block_data;
@@ -383,10 +382,47 @@ void my_creatdir(myfs_t* myfs, int cur_dir_inode_number, const char* new_dirname
   memcpy(myfs->groupdescriptor.groupdescriptor_info.inode_table, inodeTable_cpy, BLKSIZE);
   free(inodeTable_cpy);
 
+  inode_t* parentInode_real = &myfs->groupdescriptor.groupdescriptor_info.inode_table[cur_dir_inode_number];
+  inode_t* new_inode_real = &myfs->groupdescriptor.groupdescriptor_info.inode_table[new_inode_number];
 
-  // 4
 
-  // 5
+  // Add ".." and "." inodes/directories
+  block_t* new_dir_block = new_inode_real->data[0];
+  block_t* dirblock_cpy = malloc(BLKSIZE);
+  memcpy(dirblock_cpy, new_dir_block, BLKSIZE);
+
+  dirent_t* entries = (dirent_t*) dirblock_cpy;
+
+  entries[0].inode = new_inode_number;
+  entries[0].file_type = 2;   // directory
+  entries[0].name_len = 1;
+  strcpy(entries[0].name, ".");
+
+  entries[1].inode = cur_dir_inode_number;
+  entries[1].file_type = 2;   // directory
+  entries[1].name_len = 2;
+  strcpy(entries[1].name, "..");
+
+  memcpy(new_dir_block, dirblock_cpy, BLKSIZE);
+  free(dirblock_cpy);
+
+
+  // Insert directory entries into the inodes
+  block_t* parent_data_block = parentInode_real->data[0];
+  block_t* parent_block_cpy = malloc(BLKSIZE);
+  memcpy(parent_block_cpy, parent_data_block, BLKSIZE);
+
+  dirent_t* parent_entries = (dirent_t*) parent_block_cpy;
+
+  int num_entries = parentInode_real->size / sizeof(dirent_t);
+  dirent_t* new_entry = &parent_entries[num_entries - 1];
+
+  new_entry->inode = new_inode_number;
+  new_entry->file_type = 2;  // directory
+  new_entry->name_len = strlen(new_dirname);
+
+  strcpy(new_entry->name, new_dirname);
+
+  memcpy(parent_data_block, parent_block_cpy, BLKSIZE);
+  free(parent_block_cpy);
 }
-
-
